@@ -152,18 +152,18 @@ export class Home extends HTMLElement {
                 svg({ icon: "icon-github" }),
                 label({ textContent: "GitHub" }),
             ),
-            button(
-                {
-                    className: style.socialItem,
-                    onclick: () => {
-                        PubSub.default.pub("executeCommand", "wechat.group");
-                    },
-                },
-                svg({
-                    icon: "icon-wechatGroup",
-                }),
-                label({ textContent: new Localize("command.wechat.group") }),
-            ),
+            // button(
+            //     {
+            //         className: style.socialItem,
+            //         onclick: () => {
+            //             PubSub.default.pub("executeCommand", "wechat.group");
+            //         },
+            //     },
+            //     svg({
+            //         icon: "icon-wechatGroup",
+            //     }),
+            //     label({ textContent: new Localize("command.wechat.group") }),
+            // ),
         );
     }
 
