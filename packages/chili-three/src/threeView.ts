@@ -158,8 +158,9 @@ export class ThreeView extends Observable implements IView {
 
     protected initRenderer() {
         let renderer = new WebGLRenderer({
-            antialias: false,
+            antialias: true,
             alpha: true,
+            powerPreference: "high-performance",
         });
         renderer.setPixelRatio(window.devicePixelRatio);
 
