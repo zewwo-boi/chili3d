@@ -24,10 +24,10 @@ export const DefaultRibbon: RibbonTab[] = [
                 items: [
                     "modify.move",
                     ["modify.rotate", "modify.mirror"], //, "modify.array"],
+                    ["modify.fillet", "modify.chamfer"], // "modify.explode"],
                     ["modify.split", "modify.break", "modify.trim"],
-                    ["modify.fillet", "modify.chamfer", "modify.explode"],
                     ["modify.deleteNode", "modify.removeShapes", "modify.removeFeature"],
-                    ["modify.brushAdd", "modify.brushRemove", "modify.brushClear"],
+                    // ["modify.brushAdd", "modify.brushRemove", "modify.brushClear"],
                 ],
             },
             {
@@ -38,13 +38,13 @@ export const DefaultRibbon: RibbonTab[] = [
                 groupName: "ribbon.group.boolean",
                 items: [["boolean.common", "boolean.cut", "boolean.join"]],
             },
-            {
-                groupName: "ribbon.group.workingPlane",
-                items: [
-                    "workingPlane.toggleDynamic",
-                    ["workingPlane.set", "workingPlane.alignToPlane", "workingPlane.fromSection"],
-                ],
-            },
+            // {
+            //     groupName: "ribbon.group.workingPlane",
+            //     items: [
+            //         "workingPlane.toggleDynamic",
+            //         ["workingPlane.set", "workingPlane.alignToPlane", "workingPlane.fromSection"],
+            //     ],
+            // },
             // {
             //     groupName: "ribbon.group.tools",
             //     items: [
