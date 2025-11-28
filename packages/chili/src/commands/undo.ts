@@ -10,7 +10,11 @@ import { command, IApplication, ICommand } from "chili-core";
 export class Undo implements ICommand {
     async execute(application: IApplication): Promise<void> {
         const document = application.activeView?.document;
-        document?.history.undo();
-        document?.visual.update();
+
+        if (document != null) {
+            document.history.undo();
+            document.visual.update();
+            document.tracing.undo();
+        }
     }
 }

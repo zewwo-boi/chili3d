@@ -53,6 +53,7 @@ const config = defineConfig({
             crypto: false,
             stream: false,
             path: false,
+            uuid: require.resolve("uuid"),
         },
     },
     plugins: [

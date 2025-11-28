@@ -65,7 +65,10 @@ export class Transaction {
         if (!arrayRecord) {
             throw new Error("Transaction has not started");
         }
-        if (arrayRecord.records.length > 0) Transaction.addToHistory(this.document, arrayRecord);
+        if (arrayRecord.records.length > 0) {
+            Transaction.addToHistory(this.document, arrayRecord);
+            this.document.tracing.push(arrayRecord);
+        }
         Transaction._transactionMap.delete(this.document);
     }
 

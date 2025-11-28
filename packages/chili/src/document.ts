@@ -28,14 +28,17 @@ import {
     PubSub,
     Serialized,
     Serializer,
+    Tracing,
     Transaction,
 } from "chili-core";
+import { v4 as uuidv4 } from "uuid";
 import { Selection } from "./selection";
 
 export class Document extends Observable implements IDocument {
     readonly components: Component[] = [];
     readonly visual: IVisual;
     readonly history: History;
+    readonly tracing: Tracing;
     readonly selection: ISelection;
     readonly acts = new ObservableCollection<Act>();
     readonly materials: ObservableCollection<Material> = new ObservableCollection();
@@ -88,6 +91,7 @@ export class Document extends Observable implements IDocument {
         super();
         this.setPrivateValue("name", name);
         this.history = new History();
+        this.tracing = new Tracing();
         this.visual = application.visualFactory.create(this);
         this.selection = new Selection(this);
         this.materials.onCollectionChanged(this.handleMaterialChanged);
@@ -129,6 +133,7 @@ export class Document extends Observable implements IDocument {
         this._rootNode?.dispose();
         this.visual.dispose();
         this.history.dispose();
+        this.tracing.dispose();
         this.selection.dispose();
         this.materials.forEach((x) => x.dispose());
         this.materials.clear();
@@ -220,6 +225,7 @@ export class Document extends Observable implements IDocument {
                 dispose() {},
                 undo: () => this.materials.remove(...args.items),
                 redo: () => this.materials.push(...args.items),
+                id: uuidv4(),
             });
         } else if (args.action === CollectionAction.remove) {
             Transaction.add(this, {
@@ -227,6 +233,7 @@ export class Document extends Observable implements IDocument {
                 dispose() {},
                 undo: () => this.materials.push(...args.items),
                 redo: () => this.materials.remove(...args.items),
+                id: uuidv4(),
             });
         }
     };
