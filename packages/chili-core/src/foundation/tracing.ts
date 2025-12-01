@@ -1,6 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
+import { NodeSerializer } from "../model";
+import { Serializer } from "../serialize";
 import { IDisposable } from "./disposable";
-import { IHistoryRecord } from "./history";
+import {
+    ArrayRecord,
+    History,
+    IHistoryRecord,
+    NodeAction,
+    NodeLinkedListHistoryRecord,
+    PropertyHistoryRecord,
+} from "./history";
+import { Transaction } from "./transaction";
 
 export type NodeId = string;
 
@@ -12,7 +22,10 @@ export interface TracingNode {
     data?: IHistoryRecord;
 }
 
-/** Manages the user-operations tracing tree.
+/**
+ * Manages the user-operations tracing tree.
+ *
+ * @remarks Hooked to {@link History} and {@link Transaction}
  *
  * @beta
  */
@@ -39,7 +52,8 @@ export class Tracing implements IDisposable {
 
     /** Logs the current state for debugging. */
     update() {
-        console.log(this.currentId, this.nodes);
+        console.log(this.serialize());
+        console.log(this.nodes);
     }
 
     /**
@@ -88,11 +102,122 @@ export class Tracing implements IDisposable {
         const nodes: Record<NodeId, TracingNode> = {};
         this.nodes.forEach((node, id) => {
             nodes[id] = node;
+
+            let record = nodes[id].data;
+            if (record != null) {
+                record = RecordSerializer.serializeRecord(record);
+            }
+            nodes[id].data = record;
         });
         return nodes;
     }
 
     dispose() {
         this.nodes.clear();
+    }
+}
+
+export namespace RecordSerializer {
+    export function serializeRecord(record: IHistoryRecord): any {
+        const base = {
+            name: record.name,
+            type: record.constructor.name,
+        };
+
+        switch (record.constructor) {
+            case PropertyHistoryRecord:
+                base.type = "property";
+                break;
+            case NodeLinkedListHistoryRecord:
+                base.type = "node";
+                break;
+            case ArrayRecord:
+                base.type = "array";
+                break;
+            default:
+                break;
+        }
+
+        // Handle PropertyHistoryRecord
+        if (record instanceof PropertyHistoryRecord) {
+            return {
+                ...base,
+                property: String(record.property),
+                oldValue: serializeValue(record.oldValue),
+                newValue: serializeValue(record.newValue),
+                object: serializeObject(record.object),
+            };
+        }
+
+        // Handle NodeLinkedListHistoryRecord
+        if (record instanceof NodeLinkedListHistoryRecord) {
+            return {
+                ...base,
+                records: record.records.map((r) => ({
+                    action: NodeAction[r.action],
+                    node: NodeSerializer.serialize(r.node),
+                    oldParent: r.oldParent ? NodeSerializer.serialize(r.oldParent) : undefined,
+                    newParent: r.newParent ? NodeSerializer.serialize(r.newParent) : undefined,
+                    oldPrevious: r.oldPrevious ? NodeSerializer.serialize(r.oldPrevious) : undefined,
+                    newPrevious: r.newPrevious ? NodeSerializer.serialize(r.newPrevious) : undefined,
+                })),
+            };
+        }
+
+        // Handle ArrayRecord
+        if (record instanceof ArrayRecord) {
+            return {
+                ...base,
+                records: record.records.map((r) => serializeRecord(r)),
+            };
+        }
+
+        return base;
+    }
+
+    export function serializeValue(value: any): any {
+        if (value === null || value === undefined) return value;
+        if (typeof value === "object") {
+            // Try to get ID if it's an object with an id property
+            if ("id" in value) return { id: value.id, type: value.constructor?.name };
+            // For other objects, return a summary
+            return { type: value.constructor?.name, stringified: String(value) };
+        }
+        return value;
+    }
+
+    export function serializeObject(obj: any): any {
+        if (!obj) return undefined;
+        try {
+            // Try to serialize using Serializer if it's a registered object
+            return Serializer.serializeObject(obj);
+        } catch (error) {
+            // Fallback: serialize basic properties
+            if (typeof obj === "object") {
+                const result: any = {
+                    type: obj.constructor?.name || "Object",
+                };
+                // Include common properties
+                if ("id" in obj) result.id = obj.id;
+                if ("name" in obj) result.name = obj.name;
+                // Try to get other serializable properties
+                try {
+                    const keys = Object.keys(obj);
+                    for (const key of keys) {
+                        if (key !== "parent" && key !== "previousSibling" && key !== "nextSibling") {
+                            try {
+                                result[key] = serializeValue(obj[key]);
+                            } catch {
+                                // Skip properties that can't be serialized
+                            }
+                        }
+                    }
+                } catch {
+                    // If we can't enumerate keys, just return type and id
+                }
+                return result;
+            }
+            return obj;
+        }
     }
 }
