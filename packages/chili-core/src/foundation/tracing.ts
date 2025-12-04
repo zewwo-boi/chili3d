@@ -22,6 +22,11 @@ export interface TracingNode {
     data?: IHistoryRecord;
 }
 
+export interface TracingDiff {
+    parentId: NodeId;
+    change: TracingNode;
+}
+
 /**
  * Manages the user-operations tracing tree.
  *
@@ -30,8 +35,13 @@ export interface TracingNode {
  * @beta
  */
 export class Tracing implements IDisposable {
+    private readonly traceUploader: TraceUploader = new TraceUploader(this);
     private nodes: Map<NodeId, TracingNode> = new Map();
     private currentId: NodeId;
+
+    get tree() {
+        return this.nodes;
+    }
 
     /**
      * Creates a new Tracing instance.
@@ -50,10 +60,13 @@ export class Tracing implements IDisposable {
         this.currentId = root.id;
     }
 
-    /** Logs the current state for debugging. */
-    update() {
+    update(change?: TracingNode) {
         console.log(this.serialize());
         console.log(this.nodes);
+
+        if (change == null) return;
+
+        this.traceUploader.commitChange(change);
     }
 
     /**
@@ -73,7 +86,7 @@ export class Tracing implements IDisposable {
         this.nodes.set(data.id, node);
         this.currentId = node.id;
 
-        this.update();
+        this.update(node);
     }
 
     /**
@@ -114,6 +127,90 @@ export class Tracing implements IDisposable {
 
     dispose() {
         this.nodes.clear();
+    }
+}
+
+export class TraceUploader {
+    private readonly tracing: Tracing;
+    private readonly endpoint: string = "http://localhost:3000/data"; // TODO: Change in production
+    private synced: boolean = false; // TODO: Implement syncing by time interval
+    private lastSyncedId: string = ""; // Right-most tree node id
+    private changes: TracingDiff[] = [];
+
+    constructor(tracing: Tracing) {
+        this.tracing = tracing;
+    }
+
+    /**
+     * Syncs with the remote database
+     */
+    private async syncData() {
+        if (this.lastSyncedId.length === 0) {
+            return this.createData();
+        }
+
+        try {
+            const res = await fetch(this.endpoint, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    rootId: this.tracing.tree.entries().next().value?.[1].id,
+                    commits: this.changes,
+                }),
+            });
+
+            if (!res.ok) return false;
+            this.lastSyncedId = this.changes[this.changes.length - 1].change.id;
+            this.changes = [];
+            this.synced = true;
+            return true;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
+    /**
+     * Creates a new row in the database by POSTing the entirety of Tracing data
+     *
+     * @remarks
+     * Ran only once during the life of a Tracing instance
+     */
+    private async createData(): Promise<boolean> {
+        let serializedData = this.tracing.serialize();
+
+        try {
+            const res = await fetch(this.endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ id: serializedData[0].id, payload: serializedData }),
+            });
+
+            if (!res.ok) return false;
+
+            this.synced = true;
+            this.lastSyncedId = serializedData[serializedData.length - 1].id;
+            return true;
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
+    private async getLatestData() {
+        await fetch(this.endpoint, {
+            method: "GET",
+        });
+    }
+
+    public commitChange(change: TracingNode) {
+        this.changes.push({ parentId: change.parentId as string, change: change });
+        this.synced = false;
+        this.syncData();
     }
 }
 
