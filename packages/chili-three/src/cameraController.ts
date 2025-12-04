@@ -6,6 +6,7 @@ import {
     ICameraController,
     MathUtils,
     Observable,
+    ShapeNodeFilter,
     ViewMode,
     VisualNode,
     XYZLike,
@@ -50,8 +51,14 @@ export class CameraController extends Observable implements ICameraController {
         return this.getPrivateValue("cameraType", "perspective");
     }
     set cameraType(value: CameraType) {
+        let previousCamera: PerspectiveCamera | OrthographicCamera;
+
         if (this.setProperty("cameraType", value)) {
+            previousCamera = this._camera;
+
             this._camera = this.createCamera(this._camera.near, this._camera.far);
+            this._camera.up = previousCamera.up;
+
             if (this.camera instanceof OrthographicCamera) {
                 this.updateOrthographicCamera(this.camera);
             }
@@ -159,7 +166,9 @@ export class CameraController extends Observable implements ICameraController {
 
     startRotate(x: number, y: number): void {
         const box = new Box3();
-        const nodes = this.view.document.selection.getSelectedNodes();
+        const nodes = this.view.document.selection
+            .getSelectedNodes()
+            .filter((x) => new ShapeNodeFilter().allow(x));
         if (nodes.length > 0) {
             for (const node of nodes) {
                 const shape = this.view.document.visual.context.getVisual(node) as ThreeVisualObject;
