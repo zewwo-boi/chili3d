@@ -19,6 +19,15 @@ export class History implements IDisposable {
     disabled = false;
     undoLimits = 50;
 
+    #isUndoing = false;
+    get isUndoing() {
+        return this.#isUndoing;
+    }
+    #isRedoing = false;
+    get isRedoing() {
+        return this.#isRedoing;
+    }
+
     dispose(): void {
         this._redos.forEach((record) => record.dispose());
         this._undos.forEach((record) => record.dispose());
@@ -51,37 +60,50 @@ export class History implements IDisposable {
     }
 
     undo() {
-        this.tryOperate(() => {
-            const record = this._undos.pop();
-            if (!record) return;
+        this.#isUndoing = true;
+        this.tryOperate(
+            () => {
+                const record = this._undos.pop();
+                if (!record) return;
 
-            record.undo();
-            this._redos.push(record);
-        });
+                record.undo();
+                this._redos.push(record);
+            },
+            () => {
+                this.#isUndoing = false;
+            },
+        );
     }
 
     redo() {
         let recordId: string | undefined;
-        this.tryOperate(() => {
-            const record = this._redos.pop();
-            if (!record) return;
+        this.#isRedoing = true;
+        this.tryOperate(
+            () => {
+                const record = this._redos.pop();
+                if (!record) return;
 
-            recordId = record.id;
+                recordId = record.id;
 
-            record.redo();
-            this._undos.push(record);
-        });
+                record.redo();
+                this._undos.push(record);
+            },
+            () => {
+                this.#isRedoing = false;
+            },
+        );
 
         return recordId;
     }
 
-    private tryOperate(action: () => void) {
+    private tryOperate(action: () => void, onFinally: () => void) {
         const previousState = this.disabled;
         this.disabled = true;
         try {
             action();
         } finally {
             this.disabled = previousState;
+            onFinally();
         }
     }
 }
