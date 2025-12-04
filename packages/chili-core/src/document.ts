@@ -9,6 +9,7 @@ import {
     IPropertyChanged,
     NodeRecord,
     ObservableCollection,
+    Tracing,
 } from "./foundation";
 import { Material } from "./material";
 import { Component, INode, INodeLinkedList } from "./model";
@@ -25,6 +26,7 @@ export interface IDocument extends IPropertyChanged, IDisposable, ISerialize {
     readonly selection: ISelection;
     readonly id: string;
     readonly history: History;
+    readonly tracing: Tracing;
     readonly visual: IVisual;
     readonly application: IApplication;
     readonly components: Array<Component>;

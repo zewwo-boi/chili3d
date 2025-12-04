@@ -1,11 +1,13 @@
 // Part of the Chili3d Project, under the AGPL-3.0 License.
 // See LICENSE file in the project root for full license information.
 
+import { v4 as uuidv4 } from "uuid";
 import { INode, INodeLinkedList } from "../model";
 import { IDisposable } from "./disposable";
 
 export interface IHistoryRecord extends IDisposable {
     readonly name: string;
+    readonly id: string;
     undo(): void;
     redo(): void;
 }
@@ -59,13 +61,18 @@ export class History implements IDisposable {
     }
 
     redo() {
+        let recordId: string | undefined;
         this.tryOperate(() => {
             const record = this._redos.pop();
             if (!record) return;
 
+            recordId = record.id;
+
             record.redo();
             this._undos.push(record);
         });
+
+        return recordId;
     }
 
     private tryOperate(action: () => void) {
@@ -81,6 +88,7 @@ export class History implements IDisposable {
 
 export class PropertyHistoryRecord implements IHistoryRecord {
     readonly name: string;
+    readonly id: string;
     constructor(
         readonly object: any,
         readonly property: string | symbol | number,
@@ -88,6 +96,7 @@ export class PropertyHistoryRecord implements IHistoryRecord {
         readonly newValue: any,
     ) {
         this.name = `change ${String(property)} property`;
+        this.id = uuidv4();
     }
 
     dispose(): void {}
@@ -125,9 +134,11 @@ export interface INodeChangedObserver {
 
 export class NodeLinkedListHistoryRecord implements IHistoryRecord {
     readonly name: string;
+    readonly id: string;
 
     constructor(readonly records: NodeRecord[]) {
         this.name = "change node";
+        this.id = uuidv4();
     }
 
     dispose(): void {
@@ -198,8 +209,11 @@ export class NodeLinkedListHistoryRecord implements IHistoryRecord {
 
 export class ArrayRecord implements IHistoryRecord {
     readonly records: Array<IHistoryRecord> = [];
+    readonly id: string;
 
-    constructor(readonly name: string) {}
+    constructor(readonly name: string) {
+        this.id = uuidv4();
+    }
 
     dispose(): void {
         this.records.forEach((r) => r.dispose());

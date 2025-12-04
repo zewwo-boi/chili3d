@@ -17,9 +17,10 @@ import {
     ObservableCollection,
     PropertyChangedHandler,
     Serialized,
+    Tracing,
 } from "chili-core";
-import { ThreeVisual } from "../src/threeVisual";
 import { Component } from "chili-core/src/model/component";
+import { ThreeVisual } from "../src/threeVisual";
 
 export class TestDocument implements IDocument, ISerialize {
     application: IApplication;
@@ -28,6 +29,7 @@ export class TestDocument implements IDocument, ISerialize {
     currentNode: INodeLinkedList | undefined;
     id: string;
     history: History;
+    tracing: Tracing;
     selection: ISelection;
     visual: ThreeVisual;
     rootNode: INodeLinkedList;
@@ -64,6 +66,7 @@ export class TestDocument implements IDocument, ISerialize {
         this.id = "test";
         this.visual = new ThreeVisual(this);
         this.history = {} as any;
+        this.tracing = {} as any;
         this.selection = {} as any;
         this.rootNode = {} as any;
         this.application = { views: [] } as any;

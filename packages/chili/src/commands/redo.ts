@@ -10,7 +10,11 @@ import { command, IApplication, ICommand } from "chili-core";
 export class Redo implements ICommand {
     async execute(app: IApplication): Promise<void> {
         const document = app.activeView?.document;
-        document?.history.redo();
-        document?.visual.update();
+        if (document != null) {
+            let recordId = document.history.redo();
+            document.visual.update();
+
+            if (recordId != null) document.tracing.redo(recordId);
+        }
     }
 }
