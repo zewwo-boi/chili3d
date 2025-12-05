@@ -221,9 +221,14 @@ export namespace INode {
 }
 
 export namespace NodeSerializer {
-    export function serialize(node: INode) {
+    export function serialize(node: INode, deep: boolean = true) {
         let nodes: Serialized[] = [];
-        serializeNodeToArray(nodes, node, undefined);
+        if (deep) {
+            serializeNodeToArray(nodes, node, undefined);
+        } else {
+            let serialized: any = Serializer.serializeObject(node);
+            nodes.push(serialized);
+        }
         return nodes;
     }
 

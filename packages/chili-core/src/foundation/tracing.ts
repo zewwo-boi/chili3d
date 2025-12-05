@@ -190,10 +190,11 @@ export class TraceUploader {
                 body: JSON.stringify({ id: serializedData[0].id, payload: serializedData }),
             });
 
-            if (!res.ok) return false;
+            if (!res.ok && res.status != 409) return false;
 
             this.synced = true;
             this.lastSyncedId = serializedData[serializedData.length - 1].id;
+            this.changes = [];
             return true;
         } catch (err) {
             console.error(err);
@@ -253,10 +254,10 @@ export namespace RecordSerializer {
                 records: record.records.map((r) => ({
                     action: NodeAction[r.action],
                     node: NodeSerializer.serialize(r.node),
-                    oldParent: r.oldParent ? NodeSerializer.serialize(r.oldParent) : undefined,
-                    newParent: r.newParent ? NodeSerializer.serialize(r.newParent) : undefined,
-                    oldPrevious: r.oldPrevious ? NodeSerializer.serialize(r.oldPrevious) : undefined,
-                    newPrevious: r.newPrevious ? NodeSerializer.serialize(r.newPrevious) : undefined,
+                    oldParent: r.oldParent ? NodeSerializer.serialize(r.oldParent, false) : undefined,
+                    newParent: r.newParent ? NodeSerializer.serialize(r.newParent, false) : undefined,
+                    oldPrevious: r.oldPrevious ? NodeSerializer.serialize(r.oldPrevious, false) : undefined,
+                    newPrevious: r.newPrevious ? NodeSerializer.serialize(r.newPrevious, false) : undefined,
                 })),
             };
         }
